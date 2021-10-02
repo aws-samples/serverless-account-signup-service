@@ -1,0 +1,24 @@
+{
+  "data": {
+    "firstname": "Jane",
+    "lastname": "Doe",
+    "identity": {
+      "email": "jdoe@example.com",
+      "ssn": "123-45-6789"
+    },
+    "address": {
+      "street": "123 Main St",
+      "city": "Columbus",
+      "state": "OH",
+      "zip": "43219"
+    },
+    "interests": [
+      {"category": "home", "type": "own", "yearBuilt": 2004},
+      {"category": "auto", "type": "car", "yearBuilt": 2012},
+      {"category": "boat", "type": "snowmobile", "yearBuilt": 2020},
+      {"category": "auto", "type": "motorcycle", "yearBuilt": 2018},
+      {"category": "auto", "type": "RV", "yearBuilt": 2015},
+      {"category": "home", "type": "business", "yearBuilt": 2009}
+    ]
+  }
+}

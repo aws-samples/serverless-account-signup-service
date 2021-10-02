@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  serverless-account-signup-service
+  
+Parameters:
+  Email:
+    Type: String
+    Description: A valid email that will be subscribed to the SNS topic for approval or deny notifications
+    AllowedPattern: "^(.+)@(\\S+)$"
+    
+Resources:
+  NewAccountApplicationStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/application_service.asl.json
+      DefinitionSubstitutions:
+        CheckIdentityFunctionArn: !GetAtt CheckIdentityFunction.Arn
+        CheckAddressFunctionArn: !GetAtt CheckAddressFunction.Arn
+        AccountsTable: !Ref AccountsTable
+        SendCustomerNotificationSNSTopicArn: !Ref SendCustomerNotificationSNSTopic
+        HomeInsuranceInterestQueueArn: !Ref HomeInsuranceInterestQueue
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CheckIdentityFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CheckAddressFunction
+        - DynamoDBWritePolicy:
+            TableName: !Ref AccountsTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SendCustomerNotificationSNSTopic.TopicName
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt HomeInsuranceInterestQueue.QueueName
+
+  CheckIdentityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/check-identity/
+      Handler: app.lambdaHandler
+      Runtime: nodejs14.x
+
+  CheckIdentityFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CheckIdentityFunction}"
+      RetentionInDays: 7
+
+  CheckAddressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/check-address/
+      Handler: app.lambdaHandler
+      Runtime: nodejs14.x
+
+  CheckAddressFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CheckAddressFunction}"
+      RetentionInDays: 7
+
+  AccountsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: email
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+
+  SendCustomerNotificationSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: !Ref Email 
+          Protocol: email
+
+  HomeInsuranceInterestQueue:
+    Type: AWS::SQS::Queue
+
+Outputs:
+  NewAccountApplicationStateMachine:
+    Description: "New Account Application State Machine ARN"
+    Value: !Ref NewAccountApplicationStateMachine

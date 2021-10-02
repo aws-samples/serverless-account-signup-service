@@ -1,0 +1,168 @@
+{
+  "Comment": "This is a state machine for account application service",
+  "StartAt": "Verification",
+  "States": {
+    "Verification": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Check Identity",
+          "States": {
+            "Check Identity": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "InputPath": "$.data.identity",
+              "Parameters": {
+                "FunctionName": "${CheckIdentityFunctionArn}",
+                "Payload.$": "$"
+              },
+              "ResultSelector": {
+                "identity.$": "States.StringToJson($.Payload.body)"
+              },
+              "ResultPath": "$.result",
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Check Address",
+          "States": {
+            "Check Address": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "InputPath": "$.data.address",
+              "Parameters": {
+                "FunctionName": "${CheckAddressFunctionArn}",
+                "Payload.$": "$"
+              },
+              "ResultSelector": {
+                "address.$": "States.StringToJson($.Payload.body)"
+              },
+              "ResultPath": "$.result",
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultSelector": {
+        "identityResult.$": "$[0].result.identity",
+        "addressResult.$": "$[1].result.address"
+      },
+      "ResultPath": "$.results",
+      "Next": "Approve or Deny"
+    },
+    "Approve or Deny": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.results.identityResult.approved",
+              "BooleanEquals": true
+            },
+            {
+              "Variable": "$.results.addressResult.approved",
+              "BooleanEquals": true
+            }
+          ],
+          "Next": "Add Account",
+          "Comment": "Application Approved"
+        }
+      ],
+      "Default": "Deny Message"
+    },
+    "Add Account": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "InputPath": "$.data",
+      "Parameters": {
+        "TableName": "${AccountsTable}",
+        "Item": {
+          "email": {
+            "S.$": "$.identity.email"
+          },
+          "firstname": {
+            "S.$": "$.firstname"
+          },
+          "lastname": {
+            "S.$": "$.lastname"
+          },
+          "address": {
+            "S.$": "States.Format('{}, {}, {} - {}', $.address.street, $.address.city, $.address.state, $.address.zip)"
+          }
+        }
+      },
+      "ResultSelector": {
+        "statusCode.$": "$.SdkHttpMetadata.HttpStatusCode"
+      },
+      "ResultPath": "$.results.accountAddition",
+      "Next": "Home Insurance Interests"
+    },
+    "Home Insurance Interests": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "InputPath": "$..interests[?(@.category==home)]",
+      "Parameters": {
+        "QueueUrl": "${HomeInsuranceInterestQueueArn}",
+        "MessageBody.$": "$"
+      },
+      "ResultSelector": {
+        "statusCode.$": "$.SdkHttpMetadata.HttpStatusCode"
+      },
+      "ResultPath": "$.results.homeInsuranceInterests",
+      "Next": "Approved Message"
+    },
+    "Approved Message": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${SendCustomerNotificationSNSTopicArn}",
+        "Message.$": "States.Format('Hello {}, your application has been approved.', $.data.firstname)"
+      },
+      "ResultSelector": {
+        "statusCode.$": "$.SdkHttpMetadata.HttpStatusCode"
+      },
+      "ResultPath": "$.results.sendApprovedNotification",
+      "OutputPath": "$.results",
+      "End": true
+    },
+    "Deny Message": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${SendCustomerNotificationSNSTopicArn}",
+        "Message.$": "States.Format('Hello {}, your application has been denied because validation of provided data failed', $.data.firstname)"
+      },
+      "ResultSelector": {
+        "statusCode.$": "$.SdkHttpMetadata.HttpStatusCode"
+      },
+      "ResultPath": "$.results.sendDenyNotification",
+      "OutputPath": "$.results",
+      "End": true
+    }
+  }
+}
