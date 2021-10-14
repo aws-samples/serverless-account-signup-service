@@ -19,7 +19,6 @@
               "ResultSelector": {
                 "identity.$": "States.StringToJson($.Payload.body)"
               },
-              "ResultPath": "$.result",
               "Retry": [
                 {
                   "ErrorEquals": [
@@ -50,7 +49,6 @@
               "ResultSelector": {
                 "address.$": "States.StringToJson($.Payload.body)"
               },
-              "ResultPath": "$.result",
               "Retry": [
                 {
                   "ErrorEquals": [
@@ -69,8 +67,8 @@
         }
       ],
       "ResultSelector": {
-        "identityResult.$": "$[0].result.identity",
-        "addressResult.$": "$[1].result.address"
+        "identityResult.$": "$[0].identity",
+        "addressResult.$": "$[1].address"
       },
       "ResultPath": "$.results",
       "Next": "Approve or Deny"
