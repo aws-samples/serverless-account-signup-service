@@ -174,11 +174,11 @@ Now, the next question will be WHERE should the above result go to in the initia
 }
 ```
 
-The good thing about above json is not only that it has results from an operation but also that the incoming payload is in tact for downstream business logic consumption.
+The good thing about above json is not only that it has results from an operation but also that the incoming payload is intact for downstream business logic consumption.
 
 This pattern ensures that the previous state keeps the payload properly hydrated for the next state.
 
-A good pattern will the follow above until you reach an end state. In this sample app, you would see an end state with a Step output payload like this:
+A good pattern will follow the above until you reach an end state. In this sample app, you would see an end state with a Step output payload like this:
 
 ```json
 {
@@ -250,7 +250,7 @@ but in an ideal state scenario you would not want to send the input payload back
 Now, think of a Synchronous Express Workflow and the workflow sending above response back to caller. Less noise, more fine grained response
 
 ### Advanced JSON Path
-Let's check an advanced JSON path scenario. For this lets pick up the interests from the input payload. The state machine in this sample app focuses on filtering out `interests` of category `home`. In a real enterprise scenario, it makes lot of sense. Home insurance can be a different Business Unit than Auto or Boat insurance. Using advanced JSONPath, we can filter out `home` specific interests and either call a home insurance service, or put event on home insurance event bus using EventBridge, or put all home related interest in an `HomeInterestsQueue` where independent consumer applications can poll and work on it. 
+Let's checkout an advanced JSON path scenario. For this lets pick up the interests from the input payload. The state machine in this sample app focuses on filtering out `interests` of category `home`. In a real enterprise scenario, it makes a lot of sense. 'Home' insurance can be a different Business Unit than 'Auto' or 'Boat' insurance. Using advanced JSONPath, we can filter out `home` specific interests and either call a home insurance service, or put event on home insurance event bus using EventBridge, or put all home related interest in an `HomeInterestsQueue` where independent consumer applications can poll and work on it. 
 
 This what this sample app has as `Home Insurance Interests` state:
 
