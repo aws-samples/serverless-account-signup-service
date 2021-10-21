@@ -10,19 +10,19 @@ env:
   PIPELINE_USER_ACCESS_KEY_ID: ${{ secrets.PIPELINE_USER_ACCESS_KEY }}
   PIPELINE_USER_SECRET_ACCESS_KEY: ${{ secrets.PIPELINE_USER_SECRET_KEY }}
   SAM_TEMPLATE: template.yaml
-  TESTING_STACK_NAME: serverless-account-signup-service
-  TESTING_PIPELINE_EXECUTION_ROLE: arn:aws:iam::974751372104:user/aws-sam-cli-managed-prod-pipeline-res-PipelineUser-E8DR9XN7FIRK
-  TESTING_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::974751372104:role/aws-sam-cli-managed-dev-p-CloudFormationExecutionR-1MZQPTUAJTO37
-  TESTING_ARTIFACTS_BUCKET: aws-sam-cli-managed-dev-pipeline-artifactsbucket-twe59lvh9bpb
+  TESTING_STACK_NAME: serverless-account-signup-service-dev
+  TESTING_PIPELINE_EXECUTION_ROLE: arn:aws:iam::974751372104:role/aws-sam-cli-managed-dev-pipe-PipelineExecutionRole-Q9A7G4LOX5BN
+  TESTING_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::974751372104:role/aws-sam-cli-managed-dev-p-CloudFormationExecutionR-18LQAK4926GWR
+  TESTING_ARTIFACTS_BUCKET: aws-sam-cli-managed-dev-pipeline-artifactsbucket-euleen5obg94
   # If there are functions with "Image" PackageType in your template,
   # uncomment the line below and add "--image-repository ${TESTING_IMAGE_REPOSITORY}" to
   # testing "sam package" and "sam deploy" commands.
   # TESTING_IMAGE_REPOSITORY = '0123456789.dkr.ecr.region.amazonaws.com/repository-name'
   TESTING_REGION: us-east-2
   PROD_STACK_NAME: serverless-account-signup-service-prod
-  PROD_PIPELINE_EXECUTION_ROLE: arn:aws:iam::974751372104:role/aws-sam-cli-managed-prod-pip-PipelineExecutionRole-1CLSSFKWVR9EX
-  PROD_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::974751372104:role/aws-sam-cli-managed-prod-CloudFormationExecutionR-IY12JYLVNKBK
-  PROD_ARTIFACTS_BUCKET: aws-sam-cli-managed-prod-pipeline-artifactsbucket-q99zm97wwr3g
+  PROD_PIPELINE_EXECUTION_ROLE: arn:aws:iam::974751372104:role/aws-sam-cli-managed-prod-pip-PipelineExecutionRole-1F7W1Q6GKOILR
+  PROD_CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::974751372104:role/aws-sam-cli-managed-prod-CloudFormationExecutionR-S8DG6OJ0JWPL
+  PROD_ARTIFACTS_BUCKET: aws-sam-cli-managed-prod-pipeline-artifactsbucket-1kutudaamomvl
   # If there are functions with "Image" PackageType in your template,
   # uncomment the line below and add "--image-repository ${PROD_IMAGE_REPOSITORY}" to
   # prod "sam package" and "sam deploy" commands.
