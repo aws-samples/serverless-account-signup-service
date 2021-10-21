@@ -332,3 +332,6 @@ To delete the sample application that you created, use the AWS CLI. Assuming you
 ```bash
 sam delete
 ```
+
+## GitHub Actions Integration
+This repo is integrated with GitHub actions
