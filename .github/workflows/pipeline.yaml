@@ -9,7 +9,7 @@ on:
 env:
   PIPELINE_USER_ACCESS_KEY_ID: ${{ secrets.PIPELINE_USER_ACCESS_KEY }}
   PIPELINE_USER_SECRET_ACCESS_KEY: ${{ secrets.PIPELINE_USER_SECRET_KEY }}
-  PIPELINE_EMAIL_PARAMETER: \'ParameterKey=Email,ParameterValue=${{ secrets.PIPELINE_EMAIL_PARAMETER }}\'
+  PIPELINE_EMAIL_PARAMETER: 'ParameterKey=Email,ParameterValue=${{ secrets.PIPELINE_EMAIL_PARAMETER }}'
   SAM_TEMPLATE: template.yaml
   TESTING_STACK_NAME: serverless-account-signup-service-dev
   TESTING_PIPELINE_EXECUTION_ROLE: arn:aws:iam::974751372104:role/aws-sam-cli-managed-dev-pipe-PipelineExecutionRole-Q9A7G4LOX5BN
