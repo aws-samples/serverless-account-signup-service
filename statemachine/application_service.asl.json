@@ -4,34 +4,18 @@
   "States": {
     "Verification": {
       "Type": "Parallel",
+      "QueryLanguage": "JSONata",
       "Branches": [
         {
           "StartAt": "Check Identity",
           "States": {
             "Check Identity": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "InputPath": "$.data.identity",
-              "Parameters": {
-                "FunctionName": "${CheckIdentityFunctionArn}",
-                "Payload.$": "$"
-              },
-              "ResultSelector": {
-                "identity.$": "States.StringToJson($.Payload.body)"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 2,
-                  "BackoffRate": 2
-                }
-              ],
-              "End": true
+              "Type": "Pass",
+              "QueryLanguage": "JSONata",
+              "End": true,
+              "Output": {
+                "isIdentityValid": "{% $match($states.input.data.identity.email, /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/) and $match($states.input.data.identity.ssn, /^(\\d{3}-?\\d{2}-?\\d{4}|XXX-XX-XXXX)$/) %}"
+              }
             }
           }
         },
@@ -39,99 +23,67 @@
           "StartAt": "Check Address",
           "States": {
             "Check Address": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "InputPath": "$.data.address",
-              "Parameters": {
-                "FunctionName": "${CheckAddressFunctionArn}",
-                "Payload.$": "$"
-              },
-              "ResultSelector": {
-                "address.$": "States.StringToJson($.Payload.body)"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 2,
-                  "BackoffRate": 2
-                }
-              ],
-              "End": true
+              "Type": "Pass",
+              "QueryLanguage": "JSONata",
+              "End": true,
+              "Output": {
+                "isAddressValid": "{% $not(null in $each($states.input.data.address, function($v) { $length($trim($v)) > 0 ? $v : null })) %}"
+              }
             }
           }
         }
       ],
-      "ResultSelector": {
-        "identityResult.$": "$[0].identity",
-        "addressResult.$": "$[1].address"
+      "Assign": {
+        "inputPayload": "{% $states.context.Execution.Input %}",
+        "isCustomerValid": "{% $states.result.isIdentityValid and $states.result.isAddressValid %}"
       },
-      "ResultPath": "$.results",
-      "Next": "Approve or Deny"
+      "Next": "Approve or Deny?"
     },
-    "Approve or Deny": {
+    "Approve or Deny?": {
       "Type": "Choice",
+      "QueryLanguage": "JSONata",
       "Choices": [
         {
-          "And": [
-            {
-              "Variable": "$.results.identityResult.approved",
-              "BooleanEquals": true
-            },
-            {
-              "Variable": "$.results.addressResult.approved",
-              "BooleanEquals": true
-            }
-          ],
           "Next": "Add Account",
-          "Comment": "Application Approved"
+          "Condition": "{% $isCustomerValid %}"
         }
       ],
       "Default": "Deny Message"
     },
     "Add Account": {
       "Type": "Task",
+      "QueryLanguage": "JSONata",
       "Resource": "arn:aws:states:::dynamodb:putItem",
-      "InputPath": "$.data",
-      "Parameters": {
+      "Arguments": {
         "TableName": "${AccountsTable}",
         "Item": {
+          "PK": {
+            "S": "{% $uuid() %}"
+          },
           "email": {
-            "S.$": "$.identity.email"
+            "S": "{% $inputPayload.data.identity.email %}"
           },
-          "firstname": {
-            "S.$": "$.firstname"
-          },
-          "lastname": {
-            "S.$": "$.lastname"
+          "name": {
+            "S": "{% $inputPayload.data.firstname & ' ' & $inputPayload.data.lastname  %}"
           },
           "address": {
-            "S.$": "States.Format('{}, {}, {} - {}', $.address.street, $.address.city, $.address.state, $.address.zip)"
+            "S": "{% $join($each($inputPayload.data.address, function($v) { $v }), ', ') %}"
+          },
+          "timestamp": {
+            "S": "{% $now() %}"
           }
         }
       },
-      "ResultSelector": {
-        "statusCode.$": "$.SdkHttpMetadata.HttpStatusCode"
-      },
-      "ResultPath": "$.results.accountAddition",
       "Next": "Home Insurance Interests"
     },
     "Home Insurance Interests": {
       "Type": "Task",
+      "QueryLanguage": "JSONata",
       "Resource": "arn:aws:states:::sqs:sendMessage",
-      "InputPath": "$..interests[?(@.category==home)]",
-      "Parameters": {
+      "Arguments": {
         "QueueUrl": "${HomeInsuranceInterestQueueArn}",
-        "MessageBody.$": "$"
+        "MessageBody": "{% ($e := $inputPayload.data.identity.email; $n := $inputPayload.data.firstname & ' ' & $inputPayload.data.lastname; $inputPayload.data.interests[category = 'home']{'customer': $n, 'email': $e, 'totalAssetValue': $sum(estimatedValue), category: {type: yearBuilt}}) %}"
       },
-      "ResultSelector": {
-        "statusCode.$": "$.SdkHttpMetadata.HttpStatusCode"
-      },
-      "ResultPath": "$.results.homeInsuranceInterests",
       "Next": "Approved Message"
     },
     "Approved Message": {
@@ -139,13 +91,8 @@
       "Resource": "arn:aws:states:::sns:publish",
       "Parameters": {
         "TopicArn": "${SendCustomerNotificationSNSTopicArn}",
-        "Message.$": "States.Format('Hello {}, your application has been approved.', $.data.firstname)"
+        "Message.$": "States.Format('Hello {}, your application has been approved.', $inputPayload.data.firstname)"
       },
-      "ResultSelector": {
-        "statusCode.$": "$.SdkHttpMetadata.HttpStatusCode"
-      },
-      "ResultPath": "$.results.sendApprovedNotification",
-      "OutputPath": "$.results",
       "End": true
     },
     "Deny Message": {
@@ -153,13 +100,8 @@
       "Resource": "arn:aws:states:::sns:publish",
       "Parameters": {
         "TopicArn": "${SendCustomerNotificationSNSTopicArn}",
-        "Message.$": "States.Format('Hello {}, your application has been denied because validation of provided data failed', $.data.firstname)"
+        "Message.$": "States.Format('Hello {}, your application has been denied because validation of provided data failed', $inputPayload.data.firstname)"
       },
-      "ResultSelector": {
-        "statusCode.$": "$.SdkHttpMetadata.HttpStatusCode"
-      },
-      "ResultPath": "$.results.sendDenyNotification",
-      "OutputPath": "$.results",
       "End": true
     }
   }
