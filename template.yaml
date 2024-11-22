@@ -13,7 +13,7 @@ Resources:
   NewAccountApplicationStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: statemachine/application_service.asl.json
+      DefinitionUri: statemachine/application_service.asl.yaml
       DefinitionSubstitutions:
         AccountsTable: !Ref AccountsTable
         SendCustomerNotificationSNSTopicArn: !Ref SendCustomerNotificationSNSTopic
