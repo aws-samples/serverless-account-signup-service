@@ -54,7 +54,7 @@ Here is a sample payload:
 
 The actual insurance logic for new user account application may be different and sophisticated but for the sake of simplicity we are considering the above payload which has `data` about the new user and user's `interests` in the types of insurance from the insurance provider.
 
-Refer this [AWS Compute Blog]() for detailed explanations.
+Refer to this [AWS Compute Blog](https://aws.amazon.com/blogs/compute/simplifying-developer-experience-with-variables-and-jsonata-in-aws-step-functions/) for detailed explanations.
 
 ## Deploy the application
 To build and deploy your application for the first time, run the following in your shell:
